@@ -424,7 +424,7 @@ SR_PRIV int std_dev_clear_with_callback(const struct sr_dev_driver *driver,
 			ret = SR_ERR_BUG;
 			continue;
 		}
-		if (driver->dev_close)
+		if (driver->dev_close && sdi->status == SR_ST_ACTIVE)
 			driver->dev_close(sdi);
 
 		if (sdi->conn) {
@@ -928,3 +928,12 @@ SR_PRIV int std_dummy_set_params(struct sr_serial_dev_inst *serial,
 	return SR_OK;
 }
 
+SR_PRIV int std_dummy_set_handshake(struct sr_serial_dev_inst *serial,
+	int rts, int dtr)
+{
+	(void)serial;
+	(void)rts;
+	(void)dtr;
+
+	return SR_OK;
+}

@@ -43,9 +43,7 @@
  */
 SR_PRIV void sr_sw_limits_init(struct sr_sw_limits *limits)
 {
-	limits->limit_samples = 0;
-	limits->limit_frames = 0;
-	limits->limit_msec = 0;
+	memset(limits, 0, sizeof(*limits));
 }
 
 /**
@@ -59,7 +57,7 @@ SR_PRIV void sr_sw_limits_init(struct sr_sw_limits *limits)
  * @param data config item data
  * @return SR_ERR_NA if @p key is not a supported limit, SR_OK otherwise
  */
-SR_PRIV int sr_sw_limits_config_get(struct sr_sw_limits *limits, uint32_t key,
+SR_PRIV int sr_sw_limits_config_get(const struct sr_sw_limits *limits, uint32_t key,
 	GVariant **data)
 {
 	switch (key) {
@@ -153,7 +151,7 @@ SR_PRIV gboolean sr_sw_limits_check(struct sr_sw_limits *limits)
 		}
 	}
 
-	if (limits->limit_msec) {
+	if (limits->limit_msec && limits->start_time) {
 		guint64 now;
 		now = g_get_monotonic_time();
 		if (now > limits->start_time &&

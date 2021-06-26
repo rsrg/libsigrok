@@ -117,7 +117,7 @@ static const char *rohde_schwarz_log_not_pod_scpi_dialect[] = {
 static const uint32_t devopts[] = {
 	SR_CONF_OSCILLOSCOPE,
 	SR_CONF_LIMIT_SAMPLES | SR_CONF_SET,
-	SR_CONF_LIMIT_FRAMES | SR_CONF_SET,
+	SR_CONF_LIMIT_FRAMES | SR_CONF_GET | SR_CONF_SET,
 	SR_CONF_SAMPLERATE | SR_CONF_GET,
 	SR_CONF_TIMEBASE | SR_CONF_GET | SR_CONF_SET | SR_CONF_LIST,
 	SR_CONF_NUM_HDIV | SR_CONF_GET,
@@ -1380,8 +1380,6 @@ SR_PRIV int hmo_receive_data(int fd, int revents, void *cb_data)
 	(void)fd;
 	(void)revents;
 
-	data = NULL;
-
 	if (!(sdi = cb_data))
 		return TRUE;
 
@@ -1410,6 +1408,7 @@ SR_PRIV int hmo_receive_data(int fd, int revents, void *cb_data)
 	 */
 	switch (ch->type) {
 	case SR_CHANNEL_ANALOG:
+		data = NULL;
 		if (sr_scpi_get_block(sdi->conn, NULL, &data) != SR_OK) {
 			if (data)
 				g_byte_array_free(data, TRUE);
@@ -1423,25 +1422,9 @@ SR_PRIV int hmo_receive_data(int fd, int revents, void *cb_data)
 		/* Truncate acquisition if a smaller number of samples has been requested. */
 		if (devc->samples_limit > 0 && analog.num_samples > devc->samples_limit)
 			analog.num_samples = devc->samples_limit;
-		analog.encoding = &encoding;
-		analog.meaning = &meaning;
-		analog.spec = &spec;
-
-		encoding.unitsize = sizeof(float);
-		encoding.is_signed = TRUE;
-		encoding.is_float = TRUE;
-#ifdef WORDS_BIGENDIAN
-		encoding.is_bigendian = TRUE;
-#else
-		encoding.is_bigendian = FALSE;
-#endif
 		/* TODO: Use proper 'digits' value for this device (and its modes). */
-		encoding.digits = 2;
-		encoding.is_digits_decimal = FALSE;
-		encoding.scale.p = 1;
-		encoding.scale.q = 1;
-		encoding.offset.p = 0;
-		encoding.offset.q = 1;
+		sr_analog_init(&analog, &encoding, &meaning, &spec, 2);
+		encoding.is_signed = TRUE;
 		if (state->analog_channels[ch->index].probe_unit == 'V') {
 			meaning.mq = SR_MQ_VOLTAGE;
 			meaning.unit = SR_UNIT_VOLT;
@@ -1449,10 +1432,7 @@ SR_PRIV int hmo_receive_data(int fd, int revents, void *cb_data)
 			meaning.mq = SR_MQ_CURRENT;
 			meaning.unit = SR_UNIT_AMPERE;
 		}
-		meaning.mqflags = 0;
 		meaning.channels = g_slist_append(NULL, ch);
-		/* TODO: Use proper 'digits' value for this device (and its modes). */
-		spec.spec_digits = 2;
 		packet.payload = &analog;
 		sr_session_send(sdi, &packet);
 		devc->num_samples = data->len / sizeof(float);
@@ -1461,6 +1441,7 @@ SR_PRIV int hmo_receive_data(int fd, int revents, void *cb_data)
 		data = NULL;
 		break;
 	case SR_CHANNEL_LOGIC:
+		data = NULL;
 		if (sr_scpi_get_block(sdi->conn, NULL, &data) != SR_OK) {
 			if (data)
 				g_byte_array_free(data, TRUE);

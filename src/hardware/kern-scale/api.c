@@ -79,7 +79,6 @@ static GSList *scan(struct sr_dev_driver *di, GSList *options)
 	sr_info("Probing serial port %s.", conn);
 
 	devices = NULL;
-	serial_flush(serial);
 
 	sr_spew("Set O1 mode (continuous values, stable and unstable ones).");
 	if (serial_write_blocking(serial, "O1\r\n", 4, 0) < 0)
@@ -89,7 +88,7 @@ static GSList *scan(struct sr_dev_driver *di, GSList *options)
 	/* Let's get a bit of data and see if we can find a packet. */
 	len = sizeof(buf);
 	ret = serial_stream_detect(serial, buf, &len, scale->packet_size,
-				   scale->packet_valid, 3000);
+		scale->packet_valid, NULL, NULL, 3000);
 	if (ret != SR_OK)
 		goto scan_cleanup;
 

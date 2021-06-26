@@ -27,7 +27,7 @@ DISTCHECK_CONFIGURE_FLAGS = --disable-python
 
 FIRMWARE_DIR = $(datadir)/sigrok-firmware
 
-local_includes = -Iinclude -I$(srcdir)/include -I$(srcdir)/src -I.
+local_includes = -Iinclude -I$(srcdir)/include -I$(srcdir)/src -I. @RPC_CFLAGS@
 if BINDINGS_CXX
 local_includes += -Ibindings/cxx/include -I$(srcdir)/bindings/cxx/include -Ibindings/cxx
 endif
@@ -50,7 +50,9 @@ lib_LTLIBRARIES = libsigrok.la
 # Backend files
 libsigrok_la_SOURCES = \
 	src/backend.c \
+	src/binary_helpers.c \
 	src/conversion.c \
+	src/crc.c \
 	src/device.c \
 	src/session.c \
 	src/session_file.c \
@@ -71,11 +73,13 @@ libsigrok_la_SOURCES = \
 # Input modules
 libsigrok_la_SOURCES += \
 	src/input/input.c \
+	src/input/feed_queue.c \
 	src/input/binary.c \
 	src/input/chronovu_la8.c \
 	src/input/csv.c \
 	src/input/logicport.c \
 	src/input/raw_analog.c \
+	src/input/saleae.c \
 	src/input/trace32_ad.c \
 	src/input/vcd.c \
 	src/input/wav.c \
@@ -161,6 +165,8 @@ endif
 libsigrok_la_SOURCES += \
 	src/dmm/asycii.c \
 	src/dmm/bm25x.c \
+	src/dmm/bm52x.c \
+	src/dmm/bm85x.c \
 	src/dmm/bm86x.c \
 	src/dmm/dtm0660.c \
 	src/dmm/eev121gw.c \
@@ -169,6 +175,7 @@ libsigrok_la_SOURCES += \
 	src/dmm/fs9922.c \
 	src/dmm/m2110.c \
 	src/dmm/metex14.c \
+	src/dmm/mm38xr.c \
 	src/dmm/ms2115b.c \
 	src/dmm/ms8250d.c \
 	src/dmm/rs9lcd.c \
@@ -253,13 +260,6 @@ src_libdrivers_la_SOURCES += \
 	src/hardware/beaglelogic/api.c \
 	src/hardware/beaglelogic/beaglelogic_native.c \
 	src/hardware/beaglelogic/beaglelogic_tcp.c
-endif
-if HW_BRYMEN_DMM
-src_libdrivers_la_SOURCES += \
-	src/hardware/brymen-dmm/parser.c \
-	src/hardware/brymen-dmm/protocol.h \
-	src/hardware/brymen-dmm/protocol.c \
-	src/hardware/brymen-dmm/api.c
 endif
 if HW_CEM_DT_885X
 src_libdrivers_la_SOURCES += \
@@ -381,6 +381,12 @@ src_libdrivers_la_SOURCES += \
 	src/hardware/hp-3478a/protocol.c \
 	src/hardware/hp-3478a/api.c
 endif
+if HW_HP_59306A
+src_libdrivers_la_SOURCES += \
+	src/hardware/hp-59306a/protocol.h \
+	src/hardware/hp-59306a/protocol.c \
+	src/hardware/hp-59306a/api.c
+endif
 if HW_HUNG_CHANG_DSO_2100
 src_libdrivers_la_SOURCES += \
 	src/hardware/hung-chang-dso-2100/protocol.h \
@@ -405,6 +411,12 @@ src_libdrivers_la_SOURCES += \
 	src/hardware/ipdbg-la/protocol.c \
 	src/hardware/ipdbg-la/api.c
 endif
+if HW_ITECH_IT8500
+src_libdrivers_la_SOURCES += \
+	src/hardware/itech-it8500/protocol.h \
+	src/hardware/itech-it8500/protocol.c \
+	src/hardware/itech-it8500/api.c
+endif
 if HW_KECHENG_KC_330B
 src_libdrivers_la_SOURCES += \
 	src/hardware/kecheng-kc-330b/protocol.h \
@@ -416,6 +428,12 @@ src_libdrivers_la_SOURCES += \
 	src/hardware/kern-scale/protocol.h \
 	src/hardware/kern-scale/protocol.c \
 	src/hardware/kern-scale/api.c
+endif
+if HW_KINGST_LA2016
+src_libdrivers_la_SOURCES += \
+	src/hardware/kingst-la2016/protocol.h \
+	src/hardware/kingst-la2016/protocol.c \
+	src/hardware/kingst-la2016/api.c
 endif
 if HW_KORAD_KAXXXXP
 src_libdrivers_la_SOURCES += \
@@ -513,6 +531,24 @@ src_libdrivers_la_SOURCES += \
 	src/hardware/rdtech-dps/protocol.c \
 	src/hardware/rdtech-dps/api.c
 endif
+if HW_RDTECH_UM
+src_libdrivers_la_SOURCES += \
+	src/hardware/rdtech-um/protocol.h \
+	src/hardware/rdtech-um/protocol.c \
+	src/hardware/rdtech-um/api.c
+endif
+if HW_RDTECH_TC
+src_libdrivers_la_SOURCES += \
+	src/hardware/rdtech-tc/protocol.h \
+	src/hardware/rdtech-tc/protocol.c \
+	src/hardware/rdtech-tc/api.c
+endif
+if HW_RIGOL_DG
+src_libdrivers_la_SOURCES += \
+	src/hardware/rigol-dg/protocol.h \
+	src/hardware/rigol-dg/protocol.c \
+	src/hardware/rigol-dg/api.c
+endif
 if HW_RIGOL_DS
 src_libdrivers_la_SOURCES += \
 	src/hardware/rigol-ds/protocol.h \
@@ -607,6 +643,12 @@ src_libdrivers_la_SOURCES += \
 	src/hardware/uni-t-dmm/protocol.h \
 	src/hardware/uni-t-dmm/protocol.c \
 	src/hardware/uni-t-dmm/api.c
+endif
+if HW_UNI_T_UT181A
+src_libdrivers_la_SOURCES += \
+	src/hardware/uni-t-ut181a/protocol.h \
+	src/hardware/uni-t-ut181a/protocol.c \
+	src/hardware/uni-t-ut181a/api.c
 endif
 if HW_UNI_T_UT32X
 src_libdrivers_la_SOURCES += \
@@ -715,7 +757,8 @@ tests_main_SOURCES = \
 	tests/driver_all.c \
 	tests/device.c \
 	tests/trigger.c \
-	tests/analog.c
+	tests/analog.c \
+	tests/conv.c
 
 tests_main_LDADD = libsigrok.la $(SR_EXTRA_LIBS) $(TESTS_LIBS)
 

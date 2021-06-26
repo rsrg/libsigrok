@@ -102,6 +102,7 @@ struct dev_context {
 	int num_samplerates;
 
 	uint64_t cur_samplerate;
+	uint64_t limit_frames;
 	uint64_t limit_samples;
 	uint64_t capture_ratio;
 
@@ -110,7 +111,8 @@ struct dev_context {
 	gboolean sample_wide;
 	struct soft_trigger_logic *stl;
 
-	unsigned int sent_samples;
+	uint64_t num_frames;
+	uint64_t sent_samples;
 	int submitted_transfers;
 	int empty_transfer_count;
 

@@ -38,7 +38,7 @@ static const uint32_t drvopts[] = {
 
 static const uint32_t devopts[] = {
 	SR_CONF_CONTINUOUS,
-	SR_CONF_LIMIT_FRAMES | SR_CONF_SET,
+	SR_CONF_LIMIT_FRAMES | SR_CONF_GET | SR_CONF_SET,
 	SR_CONF_LIMIT_MSEC | SR_CONF_SET,
 	SR_CONF_OUTPUT_FREQUENCY | SR_CONF_GET | SR_CONF_LIST,
 	SR_CONF_EQUIV_CIRCUIT_MODEL | SR_CONF_GET | SR_CONF_LIST,
@@ -105,7 +105,6 @@ static int scan_lcr_port(const struct lcr_info *lcr,
 	 * send data periodically. So we check if the packets match the
 	 * probed device's expected format.
 	 */
-	serial_flush(serial);
 	if (lcr->packet_request) {
 		ret = lcr->packet_request(serial);
 		if (ret < 0) {
@@ -115,7 +114,7 @@ static int scan_lcr_port(const struct lcr_info *lcr,
 	}
 	len = sizeof(buf);
 	ret = serial_stream_detect(serial, buf, &len,
-		lcr->packet_size, lcr->packet_valid, 3000);
+		lcr->packet_size, lcr->packet_valid, NULL, NULL, 3000);
 	if (ret != SR_OK)
 		goto scan_port_cleanup;
 
@@ -199,7 +198,7 @@ static int read_lcr_port(struct sr_dev_inst *sdi,
 	len = sizeof(buf);
 	scan_packet_check_setup(sdi);
 	ret = serial_stream_detect(serial, buf, &len,
-		lcr->packet_size, scan_packet_check_func, 1500);
+		lcr->packet_size, scan_packet_check_func, NULL, NULL, 1500);
 	scan_packet_check_setup(NULL);
 
 	return ret;

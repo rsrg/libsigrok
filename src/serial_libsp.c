@@ -55,7 +55,14 @@ static int sr_ser_libsp_open(struct sr_serial_dev_inst *serial, int flags)
 	char *error;
 	int sp_flags;
 
-	sp_get_port_by_name(serial->port, &serial->sp_data);
+	ret = sp_get_port_by_name(serial->port, &serial->sp_data);
+	if (ret != SP_OK) {
+		error = sp_last_error_message();
+		sr_err("Error getting port from name %s: (%d) %s.",
+			serial->port, sp_last_error_code(), error);
+		sp_free_error_message(error);
+		return SR_ERR;
+	}
 
 	sp_flags = 0;
 	if (flags & SERIAL_RDWR)
@@ -280,6 +287,30 @@ static int sr_ser_libsp_set_params(struct sr_serial_dev_inst *serial,
 	return SR_OK;
 }
 
+static int sr_ser_libsp_set_handshake(struct sr_serial_dev_inst *serial,
+	int rts, int dtr)
+{
+	int ret;
+
+	if (!serial->sp_data) {
+		sr_dbg("Cannot configure unopened serial port %s.", serial->port);
+		return SR_ERR;
+	}
+
+	if (rts >= 0) {
+		ret = sp_set_rts(serial->sp_data, rts ? SP_RTS_ON : SP_RTS_OFF);
+		if (ret != SP_OK)
+			return SR_ERR;
+	}
+	if (dtr >= 0) {
+		ret = sp_set_dtr(serial->sp_data, dtr ? SP_DTR_ON : SP_DTR_OFF);
+		if (ret != SP_OK)
+			return SR_ERR;
+	}
+
+	return SR_OK;
+}
+
 #ifdef G_OS_WIN32
 typedef HANDLE event_handle;
 #else
@@ -494,6 +525,7 @@ static struct ser_lib_functions serlib_sp = {
 	.write = sr_ser_libsp_write,
 	.read = sr_ser_libsp_read,
 	.set_params = sr_ser_libsp_set_params,
+	.set_handshake = sr_ser_libsp_set_handshake,
 	.setup_source_add = sr_ser_libsp_source_add,
 	.setup_source_remove = sr_ser_libsp_source_remove,
 	.list = sr_ser_libsp_list,

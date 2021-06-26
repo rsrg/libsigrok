@@ -38,11 +38,14 @@ enum {
 	KORAD_KA3005P_0X01,
 	KORAD_KA3005P_0XBC,
 	KORAD_KA3005P_V42,
+	KORAD_KA3005P_V55,
 	KORAD_KD3005P,
 	KORAD_KD3005P_V20_NOSP,
+	KORAD_KD3005P_V21_NOSP,
 	RND_320_KD3005P,
 	RND_320_KA3005P,
 	RND_320K30PV,
+	TENMA_72_2550_V2,
 	TENMA_72_2540_V20,
 	TENMA_72_2540_V21,
 	TENMA_72_2540_V52,
@@ -116,7 +119,7 @@ struct dev_context {
 SR_PRIV int korad_kaxxxxp_send_cmd(struct sr_serial_dev_inst *serial,
 					const char *cmd);
 SR_PRIV int korad_kaxxxxp_read_chars(struct sr_serial_dev_inst *serial,
-					int count, char *buf);
+					size_t count, char *buf);
 SR_PRIV int korad_kaxxxxp_set_value(struct sr_serial_dev_inst *serial,
 					int target, struct dev_context *devc);
 SR_PRIV int korad_kaxxxxp_get_value(struct sr_serial_dev_inst *serial,

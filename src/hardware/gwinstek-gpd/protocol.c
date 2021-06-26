@@ -51,7 +51,7 @@ SR_PRIV int gpd_receive_reply(struct sr_serial_dev_inst *serial, char *buf,
 {
 	int l_recv = 0, bufpos = 0, retc, l_startpos = 0, lines = 1;
 	gint64 start, remaining;
-	const int timeout_ms = 100;
+	const int timeout_ms = 250;
 
 	if (!serial || !buf || (buflen <= 0))
 		return SR_ERR_ARG;
@@ -69,7 +69,7 @@ SR_PRIV int gpd_receive_reply(struct sr_serial_dev_inst *serial, char *buf,
 		if (bufpos == 0 && buf[bufpos] == '\n')
 			continue;
 
-		if (buf[bufpos] == '\n') {
+		if (buf[bufpos] == '\n' || buf[bufpos] == '\r') {
 			buf[bufpos] = '\0';
 			sr_dbg("Received line '%s'.", &buf[l_startpos]);
 			buf[bufpos] = '\n';
@@ -131,8 +131,8 @@ SR_PRIV int gpd_receive_data(int fd, int revents, void *cb_data)
 
 				reply[0] = '\0';
 				gpd_receive_reply(serial, reply, sizeof(reply));
-				if (sscanf(reply, "%f", &devc->config[i].output_voltage_max) != 1) {
-					sr_err("Invalid reply to VOUT1?: '%s'.",
+				if (sscanf(reply, "%f", &devc->config[i].output_current_last) != 1) {
+					sr_err("Invalid reply to IOUT1?: '%s'.",
 						reply);
 					return TRUE;
 				}
@@ -148,12 +148,12 @@ SR_PRIV int gpd_receive_data(int fd, int revents, void *cb_data)
 				analog.meaning->mqflags = 0;
 				analog.encoding->digits = 3;
 				analog.spec->spec_digits = 3;
-				analog.data = &devc->config[i].output_current_max;
+				analog.data = &devc->config[i].output_current_last;
 				sr_session_send(sdi, &packet);
 
 				reply[0] = '\0';
 				gpd_receive_reply(serial, reply, sizeof(reply));
-				if (sscanf(reply, "%f", &devc->config[i].output_voltage_max) != 1) {
+				if (sscanf(reply, "%f", &devc->config[i].output_voltage_last) != 1) {
 					sr_err("Invalid reply to VOUT1?: '%s'.",
 						reply);
 					return TRUE;
@@ -170,11 +170,12 @@ SR_PRIV int gpd_receive_data(int fd, int revents, void *cb_data)
 				analog.meaning->mqflags = SR_MQFLAG_DC;
 				analog.encoding->digits = 3;
 				analog.spec->spec_digits = 3;
-				analog.data = &devc->config[i].output_voltage_max;
+				analog.data = &devc->config[i].output_voltage_last;
 				sr_session_send(sdi, &packet);
 			}
 
 			devc->reply_pending = FALSE;
+			sr_sw_limits_update_samples_read(&devc->limits, 1);
 		}
 	} else {
 		if (!devc->reply_pending) {

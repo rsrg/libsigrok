@@ -90,7 +90,6 @@ static GSList *scan(struct sr_dev_driver *di, GSList *options)
 	devices = NULL;
 	serial = sr_serial_dev_inst_new(conn, serialcomm);
 	rc = serial_open(serial, SERIAL_RDWR);
-	serial_flush(serial);
 	/* Cannot query/identify the device. Successful open shall suffice. */
 	serial_close(serial);
 	if (rc != SR_OK) {
@@ -113,10 +112,6 @@ static GSList *scan(struct sr_dev_driver *di, GSList *options)
 				channel_names[i]);
 	}
 	devices = g_slist_append(devices, sdi);
-
-	serial_close(serial);
-	if (!devices)
-		sr_serial_dev_inst_free(serial);
 
 	return std_scan_complete(di, devices);
 }
